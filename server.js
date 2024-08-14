@@ -1,4 +1,5 @@
 const express = require('express');
+const authRoutes = require('./routes/auth');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
@@ -19,7 +20,7 @@ app.get('/', (req, res) => {
     res.send('Personal Finance Management Tool API')
 });
 
-// app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', authRoutes);
 
 app.listen(PORT, () =>{
     console.log(`Server is running on port ${PORT}`)
