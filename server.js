@@ -1,5 +1,6 @@
 const express = require('express');
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
@@ -21,6 +22,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 app.listen(PORT, () =>{
     console.log(`Server is running on port ${PORT}`)
