@@ -7,4 +7,6 @@ const router = express.Router();
 // protected route to get user profile
 router.get('/profile', userControllers.getUserProfile);
 router.get('/', userControllers.getUsers);
+router.get('/:id', userControllers.findUserById);
+router.put('/profile', userControllers.updateUserProfile);
 module.exports = router;
