@@ -1,18 +1,10 @@
 const express = require('express');
 const User = require('../models/User');
-const auth = require('../middleware/auth');
-
-
+// const user = require('../middleware/user');
+const userControllers = require('../controllers/userControllers');
 const router = express.Router();
-// protected route to get user profile
-router.get('/profile', auth, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).select('-password');
-        res.json(user);
-    } catch (error) {
-        console.error(error.message);
-        res.status(500).send('Server Error');
-    }
-});
 
+// protected route to get user profile
+router.get('/profile', userControllers.getUserProfile);
+router.get('/', userControllers.getUsers);
 module.exports = router;
