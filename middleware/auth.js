@@ -1,7 +1,6 @@
 const jwt =  require('jsonwebtoken');
 
-function auth(req, res, next){
-
+function validateToken(req, res, next){
     const token = req.header('Authorization'). replace('Bearer ', '');  // Get token from header
 
     if (!token) {
@@ -16,5 +15,28 @@ function auth(req, res, next){
         res.status(401).json({ msg: 'Token is not valid' });
     }
 }
+function generateToken(req, res, next) {
+    const payload = {
+        user: {
+            id: req.user.id // Assuming user ID is available in req.user
+        }
+    };
 
-module.exports = auth;
+    jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: 3600 }, // 1 hour
+        (err, token) => {
+            if (err) {
+                console.error('JWT sign error:', err);
+                return res.status(500).json({ msg: 'Token generation failed' });
+            }
+
+            res.json({ token });
+        }
+    );
+};
+module.exports = {
+    validateToken,
+    generateToken
+};

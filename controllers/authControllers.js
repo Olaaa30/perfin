@@ -2,21 +2,40 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-exports.regiser = async (req, res) => {
-    const { name, email, password} = req.body;
+exports.register = async (req, res, next) => {
+    const { firstName, lastName, email, password, role} = req.body;
     try {
-        let user = await User.findOne({ email });
+        try{
+            let user = await User.findOne({ email });
         if (user) {
             return res.status(400).json({ msg: 'User already exists' });
+        }}catch(err){
+            console.log(err);
         }
-        user = new User({name, email, password});
+        if (!firstName || !email || !password || !lastName) {
+            return res.status(400).json({ msg: 'Please enter all fields' });
+        }
+        if (password.length < 6) {
+            return res.status(400).json({ msg: 'Password must be at least 6 characters' });
+        }
+
+        const user = new User({
+            email,
+            password,
+            firstName,
+            lastName,
+            updatedAt: new Date(),
+            role: role || 'student',
+            profilePicture: '',
+        });
         await user.save();
 
-        const payload = { user: { id: user.id } };
-        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 3600 }, (err, token) => {
-            if (err) throw err;
-            res.json({ token });
-        });
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+
+        req.user = {id: user.id};
+        next();
     }
     catch (err) {
         console.error(err.message);
@@ -24,7 +43,7 @@ exports.regiser = async (req, res) => {
     }
 }
 
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
     const { email, password} = req.body;
     try {
         let user = await User.findOne({ email });
@@ -37,11 +56,13 @@ exports.login = async (req, res) => {
             return res.status(400).json({ msg: 'Invalid Credentials' });
         }
 
-        const payload = { user: { id: user.id } };
-        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 3600 }, (err, token) => {
-            if (err) throw err;
-            res.json({ token });
+        res.json({
+            success: true,
+            message: 'User logged in successfully',
         });
+
+        req.user = { id: user.id };
+        next();
     }catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
