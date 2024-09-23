@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const adminRoutes = require('./routes/admin')
 const mongoose = require('mongoose');
 const cors = require('cors');
 // const { generateToken } = require('./middleware/auth');
@@ -36,6 +37,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes)
 
 app.listen(PORT, () =>{
     console.log(`Server is running on port ${PORT}`)

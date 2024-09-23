@@ -1,23 +1,12 @@
-router.put('/users/:id/role', auth, async (req, res) =>{
-    try {
-        const { role } = req.body;
-        let user = await user.findById(req.params.id);
+const express = require('express');
+const router = express.Router()
+const adminController = require('../controllers/adminControllers')
+// user management
+router.get('/users/:id', auth, adminController.getUserById);
+router.get('/users', auth, adminController.getUsers);
+router.delete('/users/:id/', auth, adminController.deleteUser)
+router.put('/users/:id/', auth, adminController.updateUserRole)
+// course management
+router.get
 
-        if (!user) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
-        if (req.user.role !== 'admin'){
-            return res.status(403).json({ msg: 'Permission denied' });
-        }
-
-        user.role = role;
-        await user.save();
-        res.json({
-            msg: "User role updated successfully", user
-        });
-    } catch (error) {
-        console.error(error.message);
-        res.status(500).send('Server Error');
-        
-    }
-})
+module.exports = router;

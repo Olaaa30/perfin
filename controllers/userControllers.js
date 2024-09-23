@@ -20,15 +20,6 @@ exports.getUsers = async (req, res) => {
     }
 }
 
-exports.updateUserProfile = async (req, res) => {
-    try {
-        const user = req.user;
-    }catch (error) {
-        console.error(error.message);
-        res.status(500).send('Server Error');
-    }
-};
-
 exports.findUserById = async (req, res) => {
     try {
         const user = await User.findById(req.params.id).select('-password');
