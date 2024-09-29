@@ -8,5 +8,5 @@ const router = express.Router();
 router.get('/profile', userControllers.getUserProfile);
 router.get('/', userControllers.getUsers);
 router.get('/:id', userControllers.findUserById);
-router.put('/profile', userControllers.updateUserProfile);
+// router.put('/profile', userControllers.updateUserProfile);
 module.exports = router;
