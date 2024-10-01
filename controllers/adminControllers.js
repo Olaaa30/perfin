@@ -1,14 +1,20 @@
 const User = require('../models/User');
-const Course = require('../models/Course')
+const Course = require('../models/Course');
+const { errorResponse, successResponse } = require('../utils/errorHandler');
+const { StatusCodes } = require('http-status-codes');
+
 exports.deleteUser = async (req, res, next) =>{
     try {
+        logger.info(`START: User Delete Service`)
         const { email } = req.body;
         const user = User.findOne({ email }); 
         if (!user){
-            return res.status(404).json({ msg: "User not found."})
+            logger.info(`END: User Delete Service`)
+            return errorResponse(res, StatusCodes.NOT_FOUND, "User not found.");
         }
         User.findOneAndDelete({ email });
-
+        successResponse(res, StatusCodes.ACCEPTED, 'User Deleted');
+        logger.info(`END: User Delete Service`)
     } catch (error) {
         
     }
@@ -18,33 +24,34 @@ exports.deleteUser = async (req, res, next) =>{
 
 exports.updateUserRole = async (req, res) =>{
     try {
-        const { role } = req.body;
-        let user = await user.findById(req.params.id);
+        logger.info(`START: User Role Update Service`);
+        const { email, role } = req.body;
+        let user = await user.findOne({ email });
 
         if (!user) {
-            return res.status(404).json({ msg: 'User not found' });
+            logger.info(`END: User Role Update Service`);
+            return errorResponse(res, StatusCodes.NOT_FOUND, { msg: 'User not found' });
         }
         user.role = role;
         await user.save();
-        res.json({
-            msg: "User role updated successfully"
-        });
+        logger.info(`END: User Role Update Service`)
+        successResponse(res, StatusCodes.ACCEPTED, 'User Role Updated');
     } catch (error) {
-        console.error(error.message);
-        res.status(500).send('Server Error');
+        logger.error(error.message);
+        errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Server Error');
         
     }
 };
 exports.getUserById = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id).select('-password');
-        if (!user) return res.status(404).json({ msg: 'User not found' });
+        const user = await User.findOne({}).select('-password');
+        if (!user) return errorResponse(res, StatusCodes.NOT_FOUND, { msg: 'User not found' });
         res.json(user);
     } catch (error) {
         if (error.name === 'CastError') {
             return res.status(400).json({ message: 'Invalid user ID format' });
         }
-        console.error('Error fetching user by ID:', error);
+        logger.error('Error fetching user by ID:', error);
         res.status(500).json({ message: 'Server error' });
     }
 }
@@ -57,8 +64,8 @@ exports.getUsers = async (req, res) => {
         const users = await User.find();
         res.json(users);
     } catch (error) {
-        console.error(error.message);
-        res.status(500).send('Server Error');
+        logger.error(error.message);
+        errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Server Error');
     }
 }
 
