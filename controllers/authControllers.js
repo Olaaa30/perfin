@@ -1,102 +1,109 @@
 const User = require('../models/User');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const AppError = require('../utils/appError');
+const logger = require('../utils/logger');
+const { 
+    generateToken, 
+    verifyToken, 
+    checkTokenValidity,
+    generateSecurePassword
+} = require('../utils/jwtUtils');
+const {StatusCodes} = require('http-status-codes');
+// const AppError = require('../utils/appError');
+const { errorResponse, successResponse} = require('../utils/errorHandler')
 
 exports.register = async (req, res, next) => {
-    const { firstName, lastName, email, password, role} = req.body;
+    logger.info(`START: Register Account Service`)
+
+    const { firstName, lastName, email, gender, password, role} = req.body;
     try {
-        try{
-            let user = await User.findOne({ email });
-        if (user) {
-            return res.status(400).json({ msg: 'User already exists' });
-        }}catch(err){
-            console.log(err);
+        let existingUser = await User.findOne({ email });
+        if (existingUser) {
+            logger.info(`END: Register Account Service`)
+            return errorResponse(res, StatusCodes.BAD_REQUEST, 'User Already Exists');
         }
-        if (!firstName || !email || !password || !lastName) {
-            return res.status(400).json({ msg: 'Please enter all fields' });
+        if (!firstName || !email || !password || !lastName || !gender) {
+            logger.info(`END: Register Account Service`)
+            return errorResponse(res, StatusCodes.NOT_ACCEPTABLE, 'Please provide all parameters');
         }
         if (password.length < 6) {
-            return res.status(400).json({ msg: 'Password must be at least 6 characters' });
+            logger.info(`END: Register Account Service`)
+            return errorResponse(res, StatusCodes.NOT_ACCEPTABLE, 'password length must be greater than or equal to six characters');
         }
 
         const user = new User({
             email,
-            password,
+            password: generateSecurePassword(password),
             firstName,
             lastName,
+            gender,
             updatedAt: new Date(),
             role: role || 'student',
             profilePicture: '',
         });
+
+        const accessToken = generateToken(user._id);
         await user.save();
+        successResponse(res, StatusCodes.CREATED, `successfully created account`, {user:user, token:accessToken})
+        logger.info(`END: Register Account Service`)
 
-
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(password, salt);
-
-        req.user = {id: user.id};
-        next();
     }
     catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        logger.error(error);
+        next(error);
     }
 }
 
 exports.login = async (req, res, next) => {
-    const { email, password} = req.body;
     try {
-        let user = await User.findOne({ email });
+        logger.info(`START: Login Account Service`)
+
+        const authHeader = req.headers['authorization'];
+
+        const { email, password} = req.body;
+
+        if (!email || !password){
+            return errorResponse(res, StatusCodes.BAD_REQUEST, `missing required auth parameters`)
+        }
+
+        const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ msg: 'User does not exist' });
+            return errorResponse(res, StatusCodes.NOT_FOUND, `User does not exist`);
         }
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ msg: 'Invalid Credentials' });
+        if (!checkTokenValidity(password, user.password)) {
+            return errorResponse(res, StatusCodes.BAD_REQUEST, `You have entered a wrong username or password`);
         }
 
-        res.json({
-            success: true,
-            message: 'User logged in successfully',
-        });
+        const accessToken = generateToken(user._id);
 
-        req.user = { id: user.id };
-        next();
+        logger.info(`END: Login Account Service`);
+        successResponse(res, StatusCodes.OK, `successfully logged in`, {user, token:accessToken});
     }catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        logger.error(err.message);
+        next(err);
     }
 }
 exports.resetPassword = async (req, res, next) => {
-    const { email, password, newPassword } = req.body;
+    
     try {
-        try {
-            const user = await User.findOne({ email });
-            if(!user){
-                return res.status(400).json({ msg: 'User does not exist' });
-            }
-        } catch (error) {
-            throw new AppError(400, error.message);
-        }
+        logger.info(`START: Reset Password Service`)
+        const { email, password, newPassword } = req.body;
+
         const user = await User.findOne({ email });
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json('Invalid Credentials');
+        if(!user){
+            return errorResponse(res, StatusCodes.NOT_FOUND, `User does not exist`);
         }
-        user.password = newPassword;
-        await user.save();
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(newPassword, salt);
+        if (!checkTokenValidity(password, user.password)) {
+            return errorResponse(res, StatusCodes.BAD_REQUEST, `You have entered a wrong username or password`);
+        }
 
-        req.user = { id: user.id };
+        user.password = generateSecurePassword(newPassword);
 
-        res.json({
-            success: true,
-            message: 'Password reset successful',
-        });
-        next();
+        const accessToken = createAccessToken(user._id);
+
+        successResponse(res, StatusCodes.OK, `successfully reset password`, {user, token:accessToken})
+        logger.info(`END: Reset Password Service`)
+
 
     } catch (error) {
         console.error(error.message);
