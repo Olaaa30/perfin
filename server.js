@@ -4,9 +4,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
-const adminRoutes = require('./routes/admin')
-const mongoose = require('mongoose');
+const adminRoutes = require('./routes/admin');
+const logger = require('./utils/logger')
+// const mongoose = require('mongoose');
 const cors = require('cors');
+const connectDB = require('./config/db');
+const errorHandler = require('./middleware/errorHandler/index');
 // const { generateToken } = require('./middleware/auth');
 // const { validateToken } = require('./middleware/auth');
 
@@ -17,17 +20,14 @@ app.use(cors());
 
 //middlewares
 app.use(bodyParser.json());
+app.use(errorHandler);
 
 
 
 const PORT = process.env.PORT || 4000;
 
 //cnnect to mongodb
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() =>{console.log('MongoDB connected')})
-  .catch(err => console.log(err));
+connectDB();
 
 
 // routes
@@ -39,5 +39,5 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes)
 
 app.listen(PORT, () =>{
-    console.log(`Server is running on port ${PORT}`)
+    logger.info(`Server is running on port ${PORT}`)
 })

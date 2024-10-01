@@ -1,42 +1,26 @@
-const jwt =  require('jsonwebtoken');
+const { checkTokenValidity } = require('../utils/jwtUtils');
+const ApiError = require('./errorHandler/api-error');
 
-function validateToken(req, res, next){
-    const token = req.header('Authorization'). replace('Bearer ', '');  // Get token from header
+const isLoggedIn = (res, req, next) => {
+    const authHeader = req.headers['authorization'];
 
-    if (!token) {
-        return res.status(401).json({ msg: 'No token, authorization denied' });
+    if(!authHeader) {
+        return next(ApiError.badRequest('Not Authorized'));
     }
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify token
-        req.user = decoded.user;
-        next(); // pass control to the next middleware
-    } catch (error) {
-        res.status(401).json({ msg: 'Token is not valid' });
+    if(authHeader.startsWith('Bearer')){
+        const token = authHeader.split(' ')[1];
+
+        try {
+            const payload = checkTokenValidity(token);
+            req.user = { userId: payload.id};
+            next();
+        } catch (error) {
+            return next(ApiError.badRequest('Authentication Failed'));
+        }
+    }else{
+        return next(ApiError.badRequest('Invalid authorization header'))
     }
-}
-function generateToken(req, res, next) {
-    const payload = {
-        user: {
-            id: req.user.id // Assuming user ID is available in req.user
-        }
-    };
-
-    jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: 3600 }, // 1 hour
-        (err, token) => {
-            if (err) {
-                console.error('JWT sign error:', err);
-                return res.status(500).json({ msg: 'Token generation failed' });
-            }
-
-            res.json({ token });
-        }
-    );
 };
-module.exports = {
-    validateToken,
-    generateToken
-};
+
+module.exports = {isLoggedIn};

@@ -1,22 +1,16 @@
-const errorHandler = (err, req, res, next) => {
-    let error = { ...err };
-    error.message = err.message;
-
-    // Log the error for debugging purposes
-    console.error(error);
-
-    if (error.isOperational) {
-        // Operational error, send a user-friendly response
-        return res.status(error.statusCode).json({
-            status: error.status,
-            message: error.message,
-        });
-    }
-
-    return res.status(500).json({
-        status: 'error',
-        message:  'Something went wrong!: ' + error.message,
-    });
+const errorResponse = async (res, statusCode, error) => {
+  res.status(statusCode).send({ status: "error", error });
 };
 
-module.exports = errorHandler;
+const successResponse = async (res, statusCode, message, data) => {
+  res.status(statusCode).send({
+    status: "success",
+    message: "message",
+    data
+});
+};
+
+module.exports = {
+    errorResponse,
+    successResponse
+}
